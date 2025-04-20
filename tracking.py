@@ -29,7 +29,7 @@ class FaceTracker:
     def __init__(self, args):
         self.args = args
         self.camera = self.init_camera()
-        self.running = asyncio.Event()
+        self.stop = asyncio.Event()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
         self.listener_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -39,7 +39,7 @@ class FaceTracker:
             logging.info(f"Successfully bound to UDP port {self.args.port}")
         except Exception as e:
             logging.error(f"Failed to bind UDP port {self.args.port}: {e}")
-            self.running.set()
+            self.stop.set()
 
         self.target_ip = None
         self.target_ports = []
@@ -115,7 +115,7 @@ class FaceTracker:
     async def send_facial_data(self):
         logging.info("Starting data sending loop")
         try:
-            while not self.running.is_set():
+            while not self.stop.is_set():
                 if self.target_ip and self.target_ports:
                     start = time.time()
                     data_json = json.dumps(self.cur_data).encode()
@@ -126,19 +126,19 @@ class FaceTracker:
                     await asyncio.sleep(0.1)
         except Exception as e:
             logging.error(f"Error in send_facial_data: {e}")
-            self.running.set()
+            self.stop.set()
         finally:
             logging.info("Stopped data sending loop")
 
     async def capture_frames(self):
         logging.info("Starting frame capture loop")
         try:
-            while not self.running.is_set():
+            while not self.stop.is_set():
                 start = time.time()
                 ret, frame = await asyncio.get_event_loop().run_in_executor(None, self.camera.read)
                 if not ret:
                     logging.error("Camera error - failed to read frame")
-                    self.running.set()
+                    self.stop.set()
                     break
 
                 # We have to send images in RGB format
@@ -150,7 +150,7 @@ class FaceTracker:
                 await asyncio.sleep(max(0, self.fps_delay - (time.time() - start)))
         except Exception as e:
             logging.error(f"Error in capture_frames: {e}")
-            self.running.set()
+            self.stop.set()
         finally:
             logging.info("Stopped frame capture loop")
 
@@ -158,7 +158,7 @@ class FaceTracker:
         logging.info("Starting UDP listener")
         loop = asyncio.get_event_loop()
         try:
-            while not self.running.is_set():
+            while not self.stop.is_set():
                 try:
                     data, addr = await asyncio.wait_for(
                         loop.sock_recvfrom(self.listener_sock, 1024),
@@ -182,7 +182,7 @@ class FaceTracker:
                     continue
                 except Exception as e:
                     logging.error(f"UDP listener error: {e}")
-                    self.running.set()
+                    self.stop.set()
         finally:
             logging.info("Stopped UDP listener")
 
@@ -228,8 +228,8 @@ def main():
     loop = asyncio.new_event_loop()
 
     try:
-        loop.add_signal_handler(signal.SIGINT, tracker.running.set)
-        loop.add_signal_handler(signal.SIGTERM, tracker.running.set)
+        loop.add_signal_handler(signal.SIGINT, tracker.stop.set)
+        loop.add_signal_handler(signal.SIGTERM, tracker.stop.set)
     except NotImplementedError:
         logging.warning("Signal handlers are not supported on this platform")
 
