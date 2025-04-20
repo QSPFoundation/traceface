@@ -209,17 +209,17 @@ def restricted_float(x):
 
 def main():
     logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[logging.StreamHandler()]
+        level = logging.INFO,
+        format = '%(asctime)s - %(levelname)s - %(message)s',
+        handlers = [logging.StreamHandler()]
     )
 
-    parser = argparse.ArgumentParser(description="Face tracker")
-    parser.add_argument("-c", "--camera", type=int, default=0, help="Index of the camera device")
-    parser.add_argument("-p", "--port", type=int, default=21412, help="Port to listen")
-    parser.add_argument("--fps", type=int, default=60, help="Target FPS")
-    parser.add_argument("--model", default="face_landmarker.task", help="Face model to use")
-    parser.add_argument("--smoothing", type=restricted_float, default=0.0, help="Smoothing percentage (0.0-1.0)")
+    parser = argparse.ArgumentParser(description = "Face tracker")
+    parser.add_argument("-c", "--camera", type = int, default = 0, help = "Index of the camera device")
+    parser.add_argument("-p", "--port", type = int, default = 21412, help = "Port to listen")
+    parser.add_argument("--fps", type = int, default = 60, help = "Target FPS")
+    parser.add_argument("--model", default = "face_landmarker.task", help = "Face model to use")
+    parser.add_argument("--smoothing", type = restricted_float, default = 0.0, help = "Smoothing percentage (0.0 - 1.0)")
     args = parser.parse_args()
 
     logging.info(f"Starting tracker with config: Camera={args.camera} Port={args.port} FPS={args.fps}")
