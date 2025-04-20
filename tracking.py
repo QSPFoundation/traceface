@@ -44,6 +44,7 @@ class FaceTracker:
         self.target_ip = None
         self.target_ports = []
 
+        # See https://github.com/DenchiSoft/VTubeStudioBlendshapeUDPReceiverTest/tree/main
         self.cur_data = {
             "FaceFound": False,
             "Position": {"x": 0.0, "y": 0.0, "z": 0.0},
@@ -71,12 +72,12 @@ class FaceTracker:
     def init_face_detector(self):
         logging.info(f"Initializing face detector model ({self.args.model})")
         options = mp.tasks.vision.FaceLandmarkerOptions(
-            num_faces=1,
-            base_options=mp.tasks.BaseOptions(model_asset_path=self.args.model),
-            output_face_blendshapes=True,
-            output_facial_transformation_matrixes=True,
-            running_mode=mp.tasks.vision.RunningMode.LIVE_STREAM,
-            result_callback=self.process_face_result
+            num_faces = 1,
+            base_options = mp.tasks.BaseOptions(model_asset_path = self.args.model),
+            output_face_blendshapes = True,
+            output_facial_transformation_matrixes = True,
+            running_mode = mp.tasks.vision.RunningMode.LIVE_STREAM,
+            result_callback = self.process_face_result
         )
         return mp.tasks.vision.FaceLandmarker.create_from_options(options)
 
@@ -125,7 +126,7 @@ class FaceTracker:
                     await asyncio.sleep(0.1)
         except Exception as e:
             logging.error(f"Error in send_facial_data: {e}")
-            raise
+            self.running.set()
         finally:
             logging.info("Stopped data sending loop")
 
@@ -140,9 +141,16 @@ class FaceTracker:
                     self.running.set()
                     break
 
-                image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
-                self.detector.detect_async(image, int(time.time() * 1000))
+                # We have to send images in RGB format
+                image = mp.Image(image_format = mp.ImageFormat.SRGB, data = frame)
+
+                # Use live detection to keep up with processing
+                self.detector.detect_async(image, int(start * 1000))
+
                 await asyncio.sleep(max(0, self.fps_delay - (time.time() - start)))
+        except Exception as e:
+            logging.error(f"Error in capture_frames: {e}")
+            self.running.set()
         finally:
             logging.info("Stopped frame capture loop")
 
