@@ -4,7 +4,7 @@ A tiny utility that provides face tracking data in VTube Studio format using a w
 
 ## Prepare environment & Run
 
-1. Download a model file here: https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker
+1. Download the model file here: https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker
 2. Set up a virtual environment (optional but recommended):
 
 ```bash
